@@ -1,0 +1,203 @@
+import React, { useState, useEffect } from 'react';
+
+const App = () => {
+  const [tab, setTab] = useState('daily');
+  const [completedTasks, setCompletedTasks] = useState({});
+  const [customTasks, setCustomTasks] = useState({});
+  const [timeLeft, setTimeLeft] = useState(900);
+  const [timerActive, setTimerActive] = useState(false);
+
+  useEffect(() => {
+    let timer;
+    if (timerActive && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    }
+    if (timeLeft === 0) {
+      setTimerActive(false);
+      alert('Time is up! Great job!');
+    }
+    return () => clearInterval(timer);
+  }, [timerActive, timeLeft]);
+
+  const toggleTask = (taskKey) => {
+    setCompletedTasks((prev) => ({
+      ...prev,
+      [taskKey]: !prev[taskKey]
+    }));
+  };
+
+  const handleCustomTaskChange = (week, index, value) => {
+    setCustomTasks((prev) => {
+      const newWeekTasks = prev[week] ? [...prev[week]] : ['', ''];
+      newWeekTasks[index] = value;
+      return { ...prev, [week]: newWeekTasks };
+    });
+  };
+
+  const toggleCustomTask = (week, index) => {
+    const key = `${week}-custom-${index}`;
+    setCompletedTasks((prev) => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const dailyRoutine = [
+    'Make bed',
+    'Swish & swipe bathroom',
+    'Empty dishwasher',
+    'Shine sink',
+    'Lay out clothes',
+    '5-min Room Rescue'
+  ];
+
+  const unpackingTasks = {
+    'Week 1: Bedroom & Bathrooms': [
+      'Declutter dresser',
+      'Nightstand & under bed',
+      'Master bath cabinets',
+      'Guest bath declutter',
+      'Pack/unpack stray boxes'
+    ],
+    'Week 2: Kitchen': [
+      'Pantry shelves',
+      'Upper cabinets',
+      'Lower cabinets',
+      'Drawers',
+      'Fridge/freezer'
+    ],
+    'Week 3: Living & Family Rooms': [
+      'Sort books/DVDs',
+      'Declutter shelves & side tables',
+      'Toys & games',
+      'Cables & electronics',
+      'Decorations & surfaces'
+    ],
+    'Week 4: Garage': [
+      'Bay 1 unpack & declutter',
+      'Bay 2 unpack & declutter',
+      'Bay 3 unpack & declutter',
+      'Sort tools & garden items',
+      'Sweep & tidy garage'
+    ],
+    'Week 5: Craft Supplies & Wrap-Up': [
+      'Gather all craft supplies',
+      'Purge dried-up paints & markers',
+      'Sort & label craft containers',
+      'Organize craft station',
+      'Final unpacking touch-ups'
+    ]
+  };
+
+  const weeklyCleaning = [
+    'Vacuum/sweep main floors',
+    'Mop bathroom floors',
+    'Empty all trash',
+    'Dust surfaces',
+    'Wipe mirrors/appliances',
+    'Change sheets and towels'
+  ];
+
+  const renderTasks = (title, tasks, weekKey) => (
+    <div>
+      <h2 className="text-xl font-bold my-4">{title}</h2>
+      <ul>
+        {tasks.map((task) => (
+          <li key={task} className="flex items-center gap-2 py-1">
+            <input
+              type="checkbox"
+              checked={!!completedTasks[task]}
+              onChange={() => toggleTask(task)}
+            />
+            <span>{task}</span>
+          </li>
+        ))}
+        {/* Two custom editable tasks */}
+        {[0, 1].map((index) => {
+          const weekTasks = customTasks[weekKey] || ['', ''];
+          const taskText = weekTasks[index];
+          const key = `${weekKey}-custom-${index}`;
+          return (
+            <li key={key} className="flex items-center gap-2 py-1">
+              <input
+                type="checkbox"
+                checked={!!completedTasks[key]}
+                onChange={() => toggleCustomTask(weekKey, index)}
+              />
+              <input
+                type="text"
+                placeholder="Add custom task"
+                value={taskText}
+                onChange={(e) =>
+                  handleCustomTaskChange(weekKey, index, e.target.value)
+                }
+                className="border rounded px-2 py-1 flex-grow"
+              />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+
+  const formatTime = (secs) => {
+    const min = Math.floor(secs / 60);
+    const sec = secs % 60;
+    return `${min}:${sec < 10 ? '0' + sec : sec}`;
+  };
+
+  return (
+    <div className="p-4 max-w-xl mx-auto font-sans">
+      <div className="flex justify-around border-b pb-2 mb-4">
+        <button onClick={() => setTab('daily')}>Daily Routine</button>
+        <button onClick={() => setTab('unpacking')}>Unpacking</button>
+        <button onClick={() => setTab('weekly')}>Weekly Cleaning</button>
+        <button onClick={() => setTab('settings')}>Settings</button>
+      </div>
+
+      {tab === 'daily' && (
+        <div>
+          {renderTasks('Daily Routine', dailyRoutine, 'dailyRoutine')}
+          <div className="my-4 p-2 border-t">
+            <p className="font-bold">15-min Timer: {formatTime(timeLeft)}</p>
+            <button
+              className="bg-blue-500 text-white px-4 py-2 mt-2 rounded"
+              onClick={() => setTimerActive(!timerActive)}
+            >
+              {timerActive ? 'Pause' : 'Start'}
+            </button>
+            <button
+              className="bg-gray-500 text-white px-4 py-2 mt-2 ml-2 rounded"
+              onClick={() => {
+                setTimeLeft(900);
+                setTimerActive(false);
+              }}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      )}
+
+      {tab === 'unpacking' && (
+        <div>
+          {Object.entries(unpackingTasks).map(([week, tasks]) => (
+            <div key={week} className="mb-6">
+              {renderTasks(week, tasks, week)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'weekly' && renderTasks('Weekly Home Blessing', weeklyCleaning, 'weekly')}
+
+      {tab === 'settings' && (
+        <div>
+          <p className="text-gray-600">Customization features coming soon!</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
